@@ -20,6 +20,10 @@
 %           'list_m62_fam1nov.txt'              - all files in fam1nov experiments
 %           'list_m79_fam1_s1-5.txt'            - all fam1 files across 5 sessions           
 %           'list_m86_open_s1-2.txt'            - all open field files across 2 sessions
+% slackURL : strHookURL for sending slack notification using Incoming
+% Webhooks (e.g.
+% 'https://hooks.slack.com/services/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')
+% slackId  : slack username (e.g. '@m.go', '@s.prado')
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The section labeled "USER-DEFINED INPUT" requires user input
@@ -30,11 +34,21 @@
 %   CaImAn requires at least Matlab R2017b
 %   FISSA requires at least Matlab R2018
 
-function frun_pipeline_batch( array_id, list, force, dostep )
+function frun_pipeline_batch( array_id, list, force, dostep, slackURL, slackId )
+
+
+% Add to path all subfolders where the m-file resides
+folder = fileparts(mfilename('fullpath')); 
+addpath(genpath(folder));
+
+slacknotify = true; % unless slackURL and slackId were provided
+
+if nargin<5, slacknotify = false; end  % flag to send slack notifications about processing
 if nargin<4, dostep = [1;1;0;0;0;0]; end
 if nargin<3, force  = [0;0;0;0;0;0]; end
 
 tic
+
 
 % Load module folders and define data directory
 [data_locn,comp,err] = load_neuroSEEmodules;
@@ -86,7 +100,7 @@ runpatches = false;            % for CaImAn processing, flag to run patches (def
 dofissa = true;                 % flag to implement FISSA (when false, overrides force(3) setting)
 manually_refine_spikes = false; % flag to manually refine spike estimates
 doasd = false;                  % flag to do asd pf calculation 
-slacknotify = false;            % flag to send Ann slack notifications about processing
+
 
 % Processing parameters (any parameter that is not set gets a default value)
 % Add any parameters you want to set after FOV. See neuroSEE_setparams for
@@ -120,7 +134,8 @@ MatlabVer = str2double(release(1:4));
 % check(1:6) check for existing data in processing steps 1-6
 % check(7) checks for existing mat file pooling all processed data for file
 
-check = checkforExistingProcData(data_locn, file, params.methods);
+%check = checkforExistingProcData(data_locn, file, params.methods);
+check = checkforExistingProcData(data_locn, file, params);
 
 % Some security measures
 force = logicalForce(force);        % Only allow combinations of force/step values that make sense
@@ -145,10 +160,10 @@ if dostep(1)
             return
         end
 
-        % Send Ann slack message if processing has started
+        % Send slack message if processing has started
         if slacknotify
             slacktext = [file ': Processing started'];
-            neuroSEE_slackNotify( slacktext );
+            neuroSEE_slackNotify( slacktext, slackURL, slackId );
         end
 
         if strcmpi(mcorr_method,'normcorre') 

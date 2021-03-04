@@ -360,7 +360,7 @@ cprintf(str)
 % Send Ann slack message if processing has finished
 if slacknotify
     slacktext = [file ': FINISHED in' num2str(round(t/3600,2)) ' hrs. No errors!'];
-    neuroSEE_slackNotify( slacktext );
+    neuroSEE_slackNotify( slacktext, slackURL, slackId );
 end
 
 end

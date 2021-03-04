@@ -29,16 +29,20 @@
 % slacknotify : (optional) flag to send Ann Slack notification when processing is started
 %               or has ended (default: false)
 
-function frun_mcorr_batch( array_id, list, mcorr_method, force, reffile, refChannel, maxshift_r, maxshift_nr )
+function frun_mcorr_batch( array_id, list, mcorr_method, force, reffile, refChannel, maxshift_r, maxshift_nr, slackURL, slackId )
 
 if nargin<3, mcorr_method = 'normcorre'; end
 if nargin<4, force = false; end
 if nargin<5, reffile = []; end
 if nargin<6, refChannel = 'green'; end
-if nargin<7, maxshift_r = 30; end
-if nargin<8, maxshift_nr = 30; end
-slacknotify = false;
+if isempty('maxfshift_r'), maxshift_r = 30; end
+if isempty('maxfshift_nr'), maxshift_nr = 30; end
+
+slacknotify = true;
+if isempty('slackURL') || isempty('slackId'), slacknotify = false; end
 tic
+
+addpath(genpath(pwd));
 
 %% Load module folders and define data directory
 
@@ -94,11 +98,11 @@ files = extractFilenamesFromTxtfile( listfile );
 % Image to be registered
 file = files(array_id,:);
 
-% Send Ann slack message
+% Send slack message
 if slacknotify
     if array_id == 1
         slacktext = [list(6:end-4) ': registering 1 of ' num2str(size(files,1)) 'files'];
-        neuroSEE_slackNotify( slacktext );
+        neuroSEE_slackNotify( slacktext, slackURL, slackId );
     end
 end
 
@@ -118,7 +122,7 @@ if force || ~check
     if slacknotify
         if array_id == size(files,1)
             slacktext = [list(6:end-4) ': done registering ' num2str(size(files,1)) ' of ' num2str(size(files,1)) 'files'];
-            neuroSEE_slackNotify( slacktext );
+            neuroSEE_slackNotify( slacktext, slackURL, slackId );
         end
     end
 
